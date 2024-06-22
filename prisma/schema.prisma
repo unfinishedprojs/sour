@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  discordId             String   @id
+  discordUser           String
+  discordSlug           String
+  discordProfilePicture String
+  password              String
+  inviteString          String   @unique
+  role                  UserType @default(USER)
+  votes                 Vote[]
+  invite                Invite   @relation(fields: [inviteString], references: [invite])
+}
+
+model Invite {
+  invite    String  @id
+  user      User?
+  discordId String? @unique // Optional to match invites with discordId later
+}
+
+enum UserType {
+  USER
+  ADMIN
+}
+
+model Poll {
+  pollId    Int      @id @default(autoincrement())
+  type      PollType
+  question  String
+  options   String[] @default(["Yes", "No"])
+  createdAt DateTime
+  votes     Vote[]
+}
+
+model Vote {
+  user   User   @relation(fields: [userId], references: [discordId])
+  userId String
+  poll   Poll   @relation(fields: [pollId], references: [pollId])
+  pollId Int
+  option String
+
+  @@id([userId, pollId])
+}
+
+enum PollType {
+  inviteUser
+  kickUser
+  customText
+}
