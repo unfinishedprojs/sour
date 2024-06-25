@@ -1,20 +1,30 @@
 import { NextFunction, Request, Response } from "express";
 import handle from "../errors/handler";
 import { getInvite } from "../prisma/utils/inviteUtils";
-import { createUser } from "../prisma/utils/userUtils";
+import { createUser, getCleanUser, getUser as getPrismaUser } from "../prisma/utils/userUtils";
 import { getUserInfo } from "../oceanic/utils/users";
 import argon2 from "argon2";
-import { InviteInUseError, InviteNotFoundError } from "../errors/errors";
+import { BodyNotValid, InviteInUseError, PasswordNotValid } from "../errors/errors";
+import { JsonWebTokenError, sign } from "jsonwebtoken";
+import { env } from "../server";
 
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
     const { invite, password, discordId } = req.body;
 
     try {
-        const inviteModel = await getInvite(invite);
-
-        if (!inviteModel) {
-            throw new InviteNotFoundError();
+        if (typeof password !== "string") {
+            throw new BodyNotValid("password", password, typeof password);
         }
+
+        if (typeof invite !== "string") {
+            throw new BodyNotValid("invite", invite, typeof invite);
+        }
+
+        if (typeof discordId !== "string") {
+            throw new BodyNotValid("discordId", discordId, typeof invite);
+        }
+
+        const inviteModel = await getInvite(invite);
 
         if (inviteModel?.discordId) {
             throw new InviteInUseError();
@@ -24,10 +34,51 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
 
         const hashedPassword = await argon2.hash(password);
 
-        createUser(discordUser, inviteModel, hashedPassword);
+        const user = await createUser(discordUser, inviteModel, hashedPassword);
 
+        return res.status(203).json({ data: user });
+    } catch (error) {
+        next(error);
+    }
+};
 
+export const loginUser = async (req: Request, res: Response, next: NextFunction) => {
+    const { discordId, password } = req.body;
 
+    try {
+        if (typeof discordId !== "string") {
+            throw new BodyNotValid("discordId", discordId, typeof discordId);
+        }
+
+        if (typeof password !== "string") {
+            throw new BodyNotValid("password", password, typeof password);
+        }
+
+        const user = await getPrismaUser(discordId);
+
+        if (!(await argon2.verify(user.password, password))) {
+            throw new PasswordNotValid();
+        }
+
+        const token = sign(user, env.PRIVATE as string, { expiresIn: '24 hours' });
+
+        return res.status(200).json({ token, data: user });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (req.body.authAdmin) {
+            const { authId } = req.body;
+
+            return res.status(200).json({ data: (await getPrismaUser(authId)) });
+        } else {
+            const { authId } = req.body;
+
+            return res.status(200).json({ data: (await getCleanUser(authId)) });
+        }
     } catch (error) {
         next(error);
     }

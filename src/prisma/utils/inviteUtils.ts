@@ -19,7 +19,7 @@ export async function deleteInvite(invite: Invite) {
 }
 
 export async function getInvite(inviteString: string) {
-    return await prisma.invite.findUnique({
+    return await prisma.invite.findUniqueOrThrow({
         where: {
             invite: inviteString
         }

@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import handle from "./errors/handler";
 import userRouter from './routes/userRoutes';
+import { verifyToken } from "./middleware/authentication";
 
 const app: Application = express();
 

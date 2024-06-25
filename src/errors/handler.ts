@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
-import { InviteNotFoundError, InviteInUseError } from "./errors";
+import { InviteInUseError } from "./errors";
 
 export default function handle(error: unknown, req: Request, res: Response, next: NextFunction) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -18,10 +18,6 @@ export default function handle(error: unknown, req: Request, res: Response, next
                 return res.status(400).json({ error: "A Prisma client error occured" });
                 break;
         }
-    }
-
-    if (error instanceof InviteNotFoundError) {
-        return res.status(404).json({ error: error.message });
     }
 
     if (error instanceof InviteInUseError) {
