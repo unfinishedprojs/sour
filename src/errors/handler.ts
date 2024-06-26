@@ -3,6 +3,8 @@ import { NextFunction, Request, Response } from "express";
 import { InviteInUseError } from "./errors";
 
 export default function handle(error: unknown, req: Request, res: Response, next: NextFunction) {
+    console.log(error);
+
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
         switch (error.code) {
             case 'P2002':

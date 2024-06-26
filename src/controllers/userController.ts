@@ -1,11 +1,10 @@
 import { NextFunction, Request, Response } from "express";
-import handle from "../errors/handler";
 import { getInvite } from "../prisma/utils/inviteUtils";
 import { createUser, getCleanUser, getUser as getPrismaUser } from "../prisma/utils/userUtils";
 import { getUserInfo } from "../oceanic/utils/users";
 import argon2 from "argon2";
 import { BodyNotValid, InviteInUseError, PasswordNotValid } from "../errors/errors";
-import { JsonWebTokenError, sign } from "jsonwebtoken";
+import { sign } from "jsonwebtoken";
 import { env } from "../server";
 
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
@@ -21,7 +20,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
         }
 
         if (typeof discordId !== "string") {
-            throw new BodyNotValid("discordId", discordId, typeof invite);
+            throw new BodyNotValid("discordId", discordId, typeof discordId);
         }
 
         const inviteModel = await getInvite(invite);

@@ -1,10 +1,10 @@
-import app from "./app";
 import dotenv from "dotenv";
-import userRouter from "./routes/userRoutes";
 
 dotenv.config();
 
 export const env = process.env;
+
+import app from "./app";
 
 process.env.TZ = 'Europe/Spain';
 

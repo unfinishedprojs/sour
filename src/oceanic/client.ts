@@ -1,7 +1,7 @@
 import { Client, ActivityTypes, BotCustomActivity } from "oceanic.js";
 import { env } from "../server";
 
-export const oceanic = new Client({ auth: env.BOT_AUTH });
+const oceanic = new Client({ auth: env.BOT_AUTH });
 
 oceanic.on("ready", async () => {
   console.log("Ready as", oceanic.user.tag);
@@ -13,3 +13,5 @@ oceanic.on("ready", async () => {
     } as unknown as BotCustomActivity,
   ]);
 });
+
+export default oceanic;

@@ -41,8 +41,10 @@ model Poll {
   type      PollType
   question  String
   options   String[] @default(["Yes", "No"])
-  createdAt DateTime
+  createdAt DateTime @default(now())
+  endsAt    DateTime
   votes     Vote[]
+  extraData Json?
 }
 
 model Vote {

@@ -18,3 +18,10 @@ export class BodyNotValid extends Error {
         this.name = 'BodyNotValid';
     }
 }
+
+export class ParameterNotValid extends Error {
+    constructor(key: string) {
+        super(key);
+        this.name = 'ParameterNotValid';
+    }
+}
