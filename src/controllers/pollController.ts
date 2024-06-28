@@ -1,22 +1,46 @@
 import { NextFunction, Request, Response } from "express";
-import { getPollAsUser, createPoll as createPrismaPoll, getPollFromId } from "../prisma/utils/pollUtils";
-import { PollType } from "@prisma/client";
+import { getPollAsUser, createPoll as createPrismaPoll, getPollFromDiscordId, getVote, getPollFromId, editVote, createVote as createPrismaVote, getPolls as getPrismaPolls, countPolls, SortingMethod, Filter } from "../prisma/utils/pollUtils";
+import { PollType, User as PrismaUserType } from "@prisma/client";
 import { getUserInfo } from "../oceanic/utils/users";
-import { User } from "oceanic.js";
-import { BodyNotValid, PasswordNotValid } from "../errors/errors";
+import { User as DiscordUserType } from "oceanic.js";
+import { BodyNotValid, OptionNotValid } from "../errors/errors";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 export const getPoll = async (req: Request, res: Response, next: NextFunction) => {
+    const tokenInfo: PrismaUserType = req.body.userInfo;
+
+    const pollId = req.params.id;
+
     try {
-        if (req.body.authAdmin) {
-            const { authId } = req.body;
-
-            return res.status(200).json({ data: (await getPollAsUser(authId)) });
+        if (tokenInfo.role === 'ADMIN') {
+            return res.status(200).json({ data: (await getPollAsUser(Number(pollId))) });
         } else {
-            const { authId } = req.body;
-
-            return res.status(200).json({ data: (await getPollAsUser(authId)) });
+            return res.status(200).json({ data: (await getPollAsUser(Number(pollId))) });
         }
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getPolls = async (req: Request, res: Response, next: NextFunction) => {
+    const tokenInfo: PrismaUserType = req.body.userInfo;
+
+    try {
+        const limit = parseInt(req.query.limit as string) || 5;
+        const offset = parseInt(req.query.offset as string) || 0;
+        const sortingMethod = req.query.sort as SortingMethod || 'newest';
+        const filterMethod = req.query.filter as Filter || 'undefined';
+
+        const page = await getPrismaPolls(offset, limit, sortingMethod, filterMethod);
+
+        const totalPolls = await countPolls();
+
+        return res.status(200).json({
+            total: totalPolls,
+            limit,
+            offset,
+            data: page
+        });
     } catch (error) {
         next(error);
     }
@@ -32,13 +56,13 @@ export const createPoll = async (req: Request, res: Response, next: NextFunction
                     throw new BodyNotValid("discordId", discordId, typeof discordId);
                 }
 
-                if (await getPollFromId(discordId)) {
-                    throw new PasswordNotValid;
+                if (await getPollFromDiscordId(discordId)) {
+                    throw new PrismaClientKnownRequestError("A unique constraint would be violated", { code: "P2002", clientVersion: "", meta: {} });
                 }
 
                 const endsAt: Date = new Date((new Date()).getTime() + (60 * 60 * 24 * 1000));
 
-                const userInfo: User = await getUserInfo(discordId);
+                const userInfo: DiscordUserType = await getUserInfo(discordId);
 
                 return res.status(200).json({
                     data: (await createPrismaPoll(
@@ -57,6 +81,30 @@ export const createPoll = async (req: Request, res: Response, next: NextFunction
             default:
                 return res.status(404).json({ error: "Not implemented yet!" });
                 break;
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const createVote = async (req: Request, res: Response, next: NextFunction) => {
+    const tokenInfo: PrismaUserType = req.body.userInfo;
+
+    try {
+        const { option } = req.body;
+
+        const pollId = Number(req.params.id);
+
+        const prismaPoll = await getPollFromId(pollId);
+
+        if (prismaPoll.options.indexOf(option) == -1) {
+            throw new OptionNotValid(option, prismaPoll.options);
+        }
+
+        if (await getVote(tokenInfo, prismaPoll)) {
+            return res.status(201).json({ data: await editVote(tokenInfo, prismaPoll, option) });
+        } else {
+            return res.status(201).json({ data: await createPrismaVote(tokenInfo, prismaPoll, option) });
         }
     } catch (error) {
         next(error);

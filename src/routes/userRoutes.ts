@@ -6,6 +6,6 @@ const router = Router();
 
 router.post('/register', registerUser);
 router.post('/login', loginUser);
-router.get('/user', verifyToken, getUser);
+router.get('/user/:id', verifyToken, getUser);
 
 export default router;

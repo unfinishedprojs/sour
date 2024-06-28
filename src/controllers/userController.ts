@@ -6,6 +6,7 @@ import argon2 from "argon2";
 import { BodyNotValid, InviteInUseError, PasswordNotValid } from "../errors/errors";
 import { sign } from "jsonwebtoken";
 import { env } from "../server";
+import { User } from "@prisma/client";
 
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
     const { invite, password, discordId } = req.body;
@@ -68,15 +69,13 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
 };
 
 export const getUser = async (req: Request, res: Response, next: NextFunction) => {
+    const tokenInfo: User = req.body.userInfo;
+
     try {
-        if (req.body.authAdmin) {
-            const { authId } = req.body;
-
-            return res.status(200).json({ data: (await getPrismaUser(authId)) });
+        if (tokenInfo.role === 'ADMIN') { // I LOVE TYPESCRIPT!!!!!!!!!!!!!
+            return res.status(200).json({ data: (await getPrismaUser(req.params.id)) });
         } else {
-            const { authId } = req.body;
-
-            return res.status(200).json({ data: (await getCleanUser(authId)) });
+            return res.status(200).json({ data: (await getCleanUser(tokenInfo.discordId)) });
         }
     } catch (error) {
         next(error);

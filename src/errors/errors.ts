@@ -25,3 +25,10 @@ export class ParameterNotValid extends Error {
         this.name = 'ParameterNotValid';
     }
 }
+
+export class OptionNotValid extends Error {
+    constructor(key: string, array: string[]) {
+        super(`${key} is not available from the options of ${array}`);
+        this.name = 'OptionNotValid';
+    }
+}

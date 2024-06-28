@@ -12,9 +12,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
         if (err) {
             return res.status(401).send({ error: 'Unauthorized!' });
         }
-        req.body.authId = decoded?.discordId;
-        req.body.authPassword = decoded?.password;
-        req.body.authAdmin = decoded?.admin;
+        req.body.userInfo = decoded;
         next();
     });
 };

@@ -1,7 +1,7 @@
 import { Invite } from "@prisma/client";
 import { prisma } from "../client";
 
-export async function createInvite(invite: string, discordId: string) {
+export async function createInvite(invite: string, discordId?: string) {
     return await prisma.invite.create({
         data: {
             invite: invite,

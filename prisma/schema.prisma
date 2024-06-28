@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,25 +9,20 @@ datasource db {
 
 model User {
   discordId             String   @id
+  password              String
   discordUser           String
   discordSlug           String
   discordProfilePicture String
-  password              String
-  inviteString          String   @unique
   role                  UserType @default(USER)
-  votes                 Vote[]
+  inviteString          String   @unique
   invite                Invite   @relation(fields: [inviteString], references: [invite])
+  votes                 Vote[]
 }
 
 model Invite {
   invite    String  @id
+  discordId String? @unique
   user      User?
-  discordId String? @unique // Optional to match invites with discordId later
-}
-
-enum UserType {
-  USER
-  ADMIN
 }
 
 model Poll {
@@ -43,18 +32,23 @@ model Poll {
   options   String[] @default(["Yes", "No"])
   createdAt DateTime @default(now())
   endsAt    DateTime
-  votes     Vote[]
   extraData Json?
+  votes     Vote[]
 }
 
 model Vote {
-  user   User   @relation(fields: [userId], references: [discordId])
   userId String
-  poll   Poll   @relation(fields: [pollId], references: [pollId])
   pollId Int
   option String
+  poll   Poll   @relation(fields: [pollId], references: [pollId])
+  user   User   @relation(fields: [userId], references: [discordId])
 
   @@id([userId, pollId])
+}
+
+enum UserType {
+  USER
+  ADMIN
 }
 
 enum PollType {
